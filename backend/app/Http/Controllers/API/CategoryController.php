@@ -3,29 +3,26 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Models\Book;
+use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
-class BookController extends Controller
+class CategoryController extends Controller
 {
     public function index()
     {
-        $books = Book::with('category')->get();
+        $categories = Category::all();
         return response()->json([
             'success' => true,
-            'data' => $books
+            'data' => $categories
         ]);
     }
 
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'category_id' => 'nullable|exists:categories,id',
-            'title' => 'required|string|max:255',
-            'author' => 'required|string|max:100',
-            'price' => 'required|numeric',
-            'stock_quantity' => 'nullable|integer',
+            'name' => 'required|string|max:50',
+            'description' => 'nullable|string',
             'image' => 'nullable|string|max:255'
         ]);
 
@@ -36,49 +33,46 @@ class BookController extends Controller
             ], 422);
         }
 
-        $book = Book::create($request->all());
+        $category = Category::create($request->all());
         
         return response()->json([
             'success' => true,
-            'data' => $book,
-            'message' => 'Book created successfully'
+            'data' => $category,
+            'message' => 'Category created successfully'
         ], 201);
     }
 
     public function show($id)
     {
-        $book = Book::with('category', 'bookDetail')->find($id);
+        $category = Category::find($id);
         
-        if (!$book) {
+        if (!$category) {
             return response()->json([
                 'success' => false,
-                'message' => 'Book not found'
+                'message' => 'Category not found'
             ], 404);
         }
         
         return response()->json([
             'success' => true,
-            'data' => $book
+            'data' => $category
         ]);
     }
 
     public function update(Request $request, $id)
     {
-        $book = Book::find($id);
+        $category = Category::find($id);
         
-        if (!$book) {
+        if (!$category) {
             return response()->json([
                 'success' => false,
-                'message' => 'Book not found'
+                'message' => 'Category not found'
             ], 404);
         }
         
         $validator = Validator::make($request->all(), [
-            'category_id' => 'nullable|exists:categories,id',
-            'title' => 'sometimes|required|string|max:255',
-            'author' => 'sometimes|required|string|max:100',
-            'price' => 'sometimes|required|numeric',
-            'stock_quantity' => 'nullable|integer',
+            'name' => 'sometimes|required|string|max:50',
+            'description' => 'nullable|string',
             'image' => 'nullable|string|max:255'
         ]);
 
@@ -89,31 +83,31 @@ class BookController extends Controller
             ], 422);
         }
 
-        $book->update($request->all());
+        $category->update($request->all());
         
         return response()->json([
             'success' => true,
-            'data' => $book,
-            'message' => 'Book updated successfully'
+            'data' => $category,
+            'message' => 'Category updated successfully'
         ]);
     }
 
     public function destroy($id)
     {
-        $book = Book::find($id);
+        $category = Category::find($id);
         
-        if (!$book) {
+        if (!$category) {
             return response()->json([
                 'success' => false,
-                'message' => 'Book not found'
+                'message' => 'Category not found'
             ], 404);
         }
         
-        $book->delete();
+        $category->delete();
         
         return response()->json([
             'success' => true,
-            'message' => 'Book deleted successfully'
+            'message' => 'Category deleted successfully'
         ]);
     }
 }
