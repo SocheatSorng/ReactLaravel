@@ -33,6 +33,8 @@ Route::post('/login', [AuthController::class, 'login']);
 // Books and categories (public access)
 Route::get('/books', [BookController::class, 'index']);
 Route::get('/books/{id}', [BookController::class, 'show']);
+Route::get('/books/featured', [BookController::class, 'featured']);
+Route::get('/books/{id}/related', [BookController::class, 'related']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/categories/{id}', [CategoryController::class, 'show']);
 Route::get('/categories/{id}/books', [CategoryController::class, 'books']);
@@ -55,11 +57,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
     
     // Books (admin only)
+    
     Route::post('/books', [BookController::class, 'store']);
     Route::put('/books/{id}', [BookController::class, 'update']);
     Route::delete('/books/{id}', [BookController::class, 'destroy']);
     
     // Book Details
+    Route::get('/book-details/book/{bookId}', [BookDetailController::class, 'getByBookId']);
     Route::apiResource('book-details', BookDetailController::class);
     
     // Orders

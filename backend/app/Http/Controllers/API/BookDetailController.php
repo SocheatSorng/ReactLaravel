@@ -11,28 +11,35 @@ class BookDetailController extends Controller
 {
     public function index()
     {
-        $bookDetails = BookDetail::with('book')->get();
-        return response()->json([
-            'success' => true,
-            'data' => $bookDetails
-        ]);
+        try {
+            $bookDetails = BookDetail::with('book')->get();
+            return response()->json([
+                'success' => true,
+                'data' => $bookDetails
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'book_id' => 'required|exists:books,id|unique:book_details',
-            'isbn10' => 'nullable|string|max:10',
-            'isbn13' => 'nullable|string|max:17',
-            'publisher' => 'nullable|string|max:255',
-            'publish_year' => 'nullable|integer',
-            'edition' => 'nullable|string|max:50',
-            'page_count' => 'nullable|integer',
-            'language' => 'nullable|string|max:50',
-            'format' => 'nullable|in:Hardcover,Paperback,Ebook,Audiobook',
-            'dimensions' => 'nullable|string|max:100',
-            'weight' => 'nullable|numeric',
-            'description' => 'nullable|string'
+            'BookID' => 'required|exists:tbBook,BookID',
+            'ISBN10' => 'nullable|string|max:10',
+            'ISBN13' => 'nullable|string|max:17',
+            'Publisher' => 'nullable|string|max:255',
+            'PublishYear' => 'nullable|integer|min:1800|max:' . (date('Y') + 1),
+            'Edition' => 'nullable|string|max:50',
+            'PageCount' => 'nullable|integer|min:1',
+            'Language' => 'nullable|string|max:50',
+            'Format' => 'nullable|in:Hardcover,Paperback,Ebook,Audiobook',
+            'Dimensions' => 'nullable|string|max:100',
+            'Weight' => 'nullable|numeric|min:0',
+            'Description' => 'nullable|string'
         ]);
 
         if ($validator->fails()) {
@@ -42,56 +49,71 @@ class BookDetailController extends Controller
             ], 422);
         }
 
-        $bookDetail = BookDetail::create($request->all());
-        
-        return response()->json([
-            'success' => true,
-            'data' => $bookDetail,
-            'message' => 'Book detail created successfully'
-        ], 201);
+        try {
+            // Check if a detail record already exists for this book
+            $existingDetail = BookDetail::where('BookID', $request->BookID)->first();
+            
+            if ($existingDetail) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Book detail already exists for this book. Please use update instead.'
+                ], 422);
+            }
+            
+            $bookDetail = BookDetail::create($request->all());
+            
+            return response()->json([
+                'success' => true,
+                'data' => $bookDetail->load('book'),
+                'message' => 'Book detail created successfully'
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function show($id)
     {
-        $bookDetail = BookDetail::with('book')->find($id);
-        
-        if (!$bookDetail) {
+        try {
+            $bookDetail = BookDetail::with('book')->find($id);
+            
+            if (!$bookDetail) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Book detail not found'
+                ], 404);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'data' => $bookDetail
+            ]);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Book detail not found'
-            ], 404);
+                'message' => $e->getMessage()
+            ], 500);
         }
-        
-        return response()->json([
-            'success' => true,
-            'data' => $bookDetail
-        ]);
     }
 
     public function update(Request $request, $id)
     {
-        $bookDetail = BookDetail::find($id);
-        
-        if (!$bookDetail) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Book detail not found'
-            ], 404);
-        }
-        
         $validator = Validator::make($request->all(), [
-            'book_id' => 'sometimes|required|exists:books,id|unique:book_details,book_id,'.$bookDetail->id,
-            'isbn10' => 'nullable|string|max:10',
-            'isbn13' => 'nullable|string|max:17',
-            'publisher' => 'nullable|string|max:255',
-            'publish_year' => 'nullable|integer',
-            'edition' => 'nullable|string|max:50',
-            'page_count' => 'nullable|integer',
-            'language' => 'nullable|string|max:50',
-            'format' => 'nullable|in:Hardcover,Paperback,Ebook,Audiobook',
-            'dimensions' => 'nullable|string|max:100',
-            'weight' => 'nullable|numeric',
-            'description' => 'nullable|string'
+            'BookID' => 'sometimes|required|exists:tbBook,BookID',
+            'ISBN10' => 'nullable|string|max:10',
+            'ISBN13' => 'nullable|string|max:17',
+            'Publisher' => 'nullable|string|max:255',
+            'PublishYear' => 'nullable|integer|min:1800|max:' . (date('Y') + 1),
+            'Edition' => 'nullable|string|max:50',
+            'PageCount' => 'nullable|integer|min:1',
+            'Language' => 'nullable|string|max:50',
+            'Format' => 'nullable|in:Hardcover,Paperback,Ebook,Audiobook',
+            'Dimensions' => 'nullable|string|max:100',
+            'Weight' => 'nullable|numeric|min:0',
+            'Description' => 'nullable|string'
         ]);
 
         if ($validator->fails()) {
@@ -101,31 +123,78 @@ class BookDetailController extends Controller
             ], 422);
         }
 
-        $bookDetail->update($request->all());
-        
-        return response()->json([
-            'success' => true,
-            'data' => $bookDetail,
-            'message' => 'Book detail updated successfully'
-        ]);
+        try {
+            $bookDetail = BookDetail::find($id);
+            
+            if (!$bookDetail) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Book detail not found'
+                ], 404);
+            }
+            
+            $bookDetail->update($request->all());
+            
+            return response()->json([
+                'success' => true,
+                'data' => $bookDetail->fresh()->load('book'),
+                'message' => 'Book detail updated successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function destroy($id)
     {
-        $bookDetail = BookDetail::find($id);
-        
-        if (!$bookDetail) {
+        try {
+            $bookDetail = BookDetail::find($id);
+            
+            if (!$bookDetail) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Book detail not found'
+                ], 404);
+            }
+            
+            $bookDetail->delete();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Book detail deleted successfully'
+            ]);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Book detail not found'
-            ], 404);
+                'message' => $e->getMessage()
+            ], 500);
         }
-        
-        $bookDetail->delete();
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Book detail deleted successfully'
-        ]);
+    }
+    
+    public function getByBookId($bookId)
+    {
+        try {
+            $bookDetail = BookDetail::where('BookID', $bookId)->first();
+            
+            if (!$bookDetail) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Book detail not found for this book'
+                ], 404);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'data' => $bookDetail
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 }
